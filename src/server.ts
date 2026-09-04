@@ -1,6 +1,7 @@
 import express from "express";
 import { Pool } from "pg";
 import { createClient } from "redis";
+import { generateCaption, CaptionRequest } from "./caption";
 
 const app = express();
 
@@ -24,6 +25,9 @@ redis.on("error", (err) => {
   console.error("Redis error:", err);
 });
 
+/*
+ * Basic health check
+ */
 app.get("/health", (_req, res) => {
   res.json({
     status: "ok",
@@ -31,6 +35,9 @@ app.get("/health", (_req, res) => {
   });
 });
 
+/*
+ * PostgreSQL connection test
+ */
 app.get("/db-test", async (_req, res) => {
   try {
     const result = await pool.query("SELECT 1 AS connected");
@@ -49,6 +56,9 @@ app.get("/db-test", async (_req, res) => {
   }
 });
 
+/*
+ * Redis connection test
+ */
 app.get("/redis-test", async (_req, res) => {
   try {
     if (!redis.isOpen) {
@@ -69,6 +79,31 @@ app.get("/redis-test", async (_req, res) => {
     res.status(500).json({
       status: "error",
       redis: false,
+    });
+  }
+});
+
+/*
+ * AI Instagram caption generator
+ *
+ * POST /caption
+ */
+app.post("/caption", async (req, res) => {
+  try {
+    const input = req.body as CaptionRequest;
+
+    const caption = await generateCaption(input);
+
+    res.json({
+      status: "ok",
+      caption,
+    });
+  } catch (error) {
+    console.error("Caption generation failed:", error);
+
+    res.status(500).json({
+      status: "error",
+      message: "Caption generation failed",
     });
   }
 });
