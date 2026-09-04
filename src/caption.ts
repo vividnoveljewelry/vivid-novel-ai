@@ -35,8 +35,17 @@ Return only the caption text.
 Include a soft, natural call to action.
 `;
 
+type OpenAIResponse = {
+  output?: Array<{
+    content?: Array<{
+      type?: string;
+      text?: string;
+    }>;
+  }>;
+};
+
 export async function generateCaption(
-  input: CaptionRequest
+  input: CaptionRequest = {}
 ): Promise<string> {
   const apiKey = process.env.OPENAI_API_KEY;
 
@@ -56,7 +65,10 @@ Story/details:
 ${input.story || "Create an emotional story around a meaningful piece."}
 
 Target audience:
-${input.audience || "women who value fine jewelry, personalization and meaningful memories"}
+${
+  input.audience ||
+  "women who value fine jewelry, personalization and meaningful memories"
+}
 
 Post format:
 ${input.format || "photo"}
@@ -105,11 +117,12 @@ End with a clear but soft call to action.
     );
   }
 
-  const data = (await response.json()) as {
-    output_text?: string;
-  };
+  const data = (await response.json()) as OpenAIResponse;
 
-  const caption = data.output_text?.trim();
+  const caption = data.output
+    ?.flatMap((item) => item.content ?? [])
+    .find((part) => part.type === "output_text")
+    ?.text?.trim();
 
   if (!caption) {
     throw new Error("OpenAI returned no caption text");
