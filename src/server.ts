@@ -2,6 +2,10 @@ import express from "express";
 import { Pool } from "pg";
 import { createClient } from "redis";
 import { generateCaption, CaptionRequest } from "./caption";
+import {
+  CustomerServiceRequest,
+  generateCustomerServiceReply,
+} from "./customer-service/agent";
 
 const app = express();
 
@@ -104,6 +108,42 @@ app.post("/caption", async (req, res) => {
     res.status(500).json({
       status: "error",
       message: "Caption generation failed",
+    });
+  }
+});
+
+/*
+ * Pilot bespoke-jewelry customer-service agent
+ *
+ * POST /customer-service/test
+ * Body: { "message": "customer's message" }
+ */
+app.post("/customer-service/test", async (req, res) => {
+  const input = req.body as Partial<CustomerServiceRequest>;
+
+  if (typeof input.message !== "string" || !input.message.trim()) {
+    res.status(400).json({
+      status: "error",
+      message: "A non-empty string field named 'message' is required",
+    });
+    return;
+  }
+
+  try {
+    const reply = await generateCustomerServiceReply({
+      message: input.message.trim(),
+    });
+
+    res.json({
+      status: "ok",
+      reply,
+    });
+  } catch (error) {
+    console.error("Customer-service reply generation failed:", error);
+
+    res.status(500).json({
+      status: "error",
+      message: "Customer-service reply generation failed",
     });
   }
 });
