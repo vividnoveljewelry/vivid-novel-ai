@@ -130,13 +130,13 @@ app.post("/customer-service/test", async (req, res) => {
   }
 
   try {
-    const reply = await generateCustomerServiceReply({
+    const messages = await generateCustomerServiceReply({
       message: input.message.trim(),
     });
 
     res.json({
       status: "ok",
-      reply,
+      messages,
     });
   } catch (error) {
     console.error("Customer-service reply generation failed:", error);

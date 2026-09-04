@@ -13,21 +13,33 @@ type OpenAIResponse = {
   }>;
 };
 
+type CustomerServiceOutput = {
+  messages: string[];
+};
+
 const SYSTEM_PROMPT = `
 You are Vivid Novel's customer-service concierge for bespoke jewelry inquiries.
 
 Use only the approved knowledge below for factual claims about Vivid Novel. Follow
 its conversation guidance and guardrails. Do not guess. When information is not
 approved, say that the Vivid Novel team needs to confirm it, then collect the next
-one or two useful details. Respond only with the customer-facing reply; do not add
-labels, analysis, or notes.
+useful detail.
+
+Write the response as conversational Instagram DM bubbles:
+- Return only valid JSON in this exact shape: {"messages":["First bubble","Second bubble"]}.
+- Each bubble must contain no more than two sentences. Prefer one sentence when it sounds natural.
+- Usually send one to three bubbles. Do not fragment a short thought into a stream of tiny messages.
+- Ask only one main question at a time.
+- Use progressive disclosure: answer what is useful now and save later details for later turns.
+- Do not recite or dump knowledge that the customer did not need.
+- Keep each bubble cohesive, natural, and customer-facing. Do not add labels, analysis, or notes.
 
 ${CUSTOMER_SERVICE_KNOWLEDGE}
 `;
 
 export async function generateCustomerServiceReply(
   input: CustomerServiceRequest
-): Promise<string> {
+): Promise<string[]> {
   const apiKey = process.env.OPENAI_API_KEY;
 
   if (!apiKey) {
@@ -54,6 +66,26 @@ export async function generateCustomerServiceReply(
         },
       ],
       max_output_tokens: 500,
+      text: {
+        format: {
+          type: "json_schema",
+          name: "customer_service_messages",
+          strict: true,
+          schema: {
+            type: "object",
+            properties: {
+              messages: {
+                type: "array",
+                items: { type: "string" },
+                minItems: 1,
+                maxItems: 6,
+              },
+            },
+            required: ["messages"],
+            additionalProperties: false,
+          },
+        },
+      },
     }),
   });
 
@@ -65,15 +97,49 @@ export async function generateCustomerServiceReply(
   }
 
   const data = (await response.json()) as OpenAIResponse;
-  const reply = data.output
+  const outputText = data.output
     ?.flatMap((item) => item.content ?? [])
     .find((part) => part.type === "output_text")
     ?.text?.trim();
 
-  if (!reply) {
+  if (!outputText) {
     throw new Error("OpenAI returned no customer-service reply");
   }
 
-  return reply;
+  return parseCustomerServiceMessages(outputText);
 }
 
+function parseCustomerServiceMessages(outputText: string): string[] {
+  const unfenced = outputText
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```$/, "")
+    .trim();
+
+  try {
+    const parsed = JSON.parse(unfenced) as Partial<CustomerServiceOutput>;
+    if (Array.isArray(parsed.messages)) {
+      const messages = normalizeMessages(parsed.messages);
+      if (messages.length) return messages;
+    }
+  } catch {
+    // Normalize legacy/plain-text output below so the API contract stays stable.
+  }
+
+  return normalizeMessages([unfenced]);
+}
+
+function normalizeMessages(values: unknown[]): string[] {
+  return values
+    .filter((value): value is string => typeof value === "string")
+    .flatMap((value) => value.split(/\n\s*\n|\r?\n/))
+    .flatMap((value) => {
+      const sentences = value.match(/[^.!?。！？]+[.!?。！？]+|[^.!?。！？]+$/g) ?? [];
+      const bubbles: string[] = [];
+      for (let index = 0; index < sentences.length; index += 2) {
+        bubbles.push(sentences.slice(index, index + 2).join(" "));
+      }
+      return bubbles;
+    })
+    .map((value) => value.replace(/\s+/g, " ").trim())
+    .filter(Boolean);
+}
