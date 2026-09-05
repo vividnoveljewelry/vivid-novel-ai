@@ -119,7 +119,7 @@ app.post("/caption", async (req, res) => {
  * Body: { "message": "customer's message" }
  */
 app.post("/customer-service/test", async (req, res) => {
-  const input = req.body as Partial<CustomerServiceRequest>;
+  const input = (req.body ?? {}) as Partial<CustomerServiceRequest>;
 
   if (typeof input.message !== "string" || !input.message.trim()) {
     res.status(400).json({
@@ -129,9 +129,22 @@ app.post("/customer-service/test", async (req, res) => {
     return;
   }
 
+  if (input.history !== undefined &&
+      (!Array.isArray(input.history) || input.history.length > 100 ||
+       input.history.some((item) => !item ||
+         (item.role !== "user" && item.role !== "assistant") ||
+         typeof item.content !== "string" || !item.content.trim()))) {
+    res.status(400).json({
+      status: "error",
+      message: "'history' must be an array of up to 100 user/assistant messages with non-empty string content",
+    });
+    return;
+  }
+
   try {
     const messages = await generateCustomerServiceReply({
       message: input.message.trim(),
+      history: input.history?.map(({ role, content }) => ({ role, content })),
     });
 
     res.json({
