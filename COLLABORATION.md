@@ -33,7 +33,7 @@ All `/admin/api` routes require an admin cookie or `Authorization: Bearer <ADMIN
 - `GET /admin/api/conversations/:id`: complete staff record and briefing.
 - `POST .../:id/customer`: `{message,externalId}` simulated incoming message.
 - `POST .../:id/mode`: `{mode}`.
-- `POST .../:id/facts`: `{key,value,evidence}` human-confirmed memory.
+- `POST .../:id/facts`: `{key,value,evidence}` human-confirmed memory. Optional `source:'ai'` or `'customer'` explicitly records lower-authority provenance; it cannot overwrite confirmed values. System/Shopify sources are rejected.
 - `POST .../:id/notes`: `{note,designerConfirmed,feasibility,timeline_status,suggested_price}` private note and draft.
 - `POST .../:id/reviews/:rid/approve`: `{messages:["edited bubble"]}` stores approved outbound.
 - `POST .../:id/human-send`: `{message}` stores exceptional human outbound.
@@ -51,3 +51,4 @@ The original `/customer-service/test` remains stateless for regression compatibi
 ## Remaining integrations
 
 `src/customer-service/integrations.ts` defines explicit boundaries only. Instagram OAuth, webhook signature validation, identity mapping, media ingestion, retries and delivered receipts are not implemented. Shopify order lookup/payment webhook verification, workshop/courier events and notifications are not implemented. No `sent` or `delivered` status exists for outgoing V1 messages. Token-authenticated manual simulation is not a production channel adapter. Feasibility detection is conservative keyword routing; expand multilingual intent coverage before opening real inbound channels.
+

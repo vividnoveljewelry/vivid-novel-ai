@@ -60,9 +60,12 @@ export async function putFact(db: PoolClient,id:string,key:string,value:unknown,
 export async function updateFact(id:string, body:any, actor:string) {
  return transaction(async db => {
   await lock(db,id);
-  // Public/staff requests cannot impersonate Shopify/system. AI provenance is available only to internal code.
-  const accepted=await putFact(db,id,body.key,body.value,'human',true,requiredText(body.evidence),actor);
-  await changed(db,id); return {accepted};
+  // Staff may explicitly record a low-authority inference; never silently elevate it.
+  // Shopify/system confirmation is reserved for verified adapters, not admin request fields.
+  const source=body.source || 'human';
+  if(!['human','ai','customer'].includes(source)) throw new WorkflowError(400,'Only human, customer or AI provenance can be recorded manually');
+  const accepted=await putFact(db,id,body.key,body.value,source,source==='human',requiredText(body.evidence),actor);
+  if(accepted) await changed(db,id); return {accepted};
  });
 }
 export async function setMode(id:string, mode:string, actor:string) {
@@ -199,3 +202,4 @@ export async function stage(id:string,target:OrderStage,evidence:string,actor:st
   await changed(db,id); await audit(db,id,'stage_changed',actor,{from:old.stage,to:target,evidence}); return next;
  });
 }
+
