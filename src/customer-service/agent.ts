@@ -1,6 +1,7 @@
 import { CUSTOMER_SERVICE_KNOWLEDGE } from "./knowledge";
 import { CUSTOMER_SERVICE_BEHAVIOR } from "./behavior";
 import { CUSTOMER_SERVICE_GUARDRAILS } from "./guardrails";
+import { CUSTOMER_SERVICE_POLICY_BEHAVIOR } from "./service-behavior";
 
 export type ConversationMessage = {
   role: "user" | "assistant";
@@ -45,6 +46,8 @@ Write the response as conversational Instagram DM bubbles:
 ${CUSTOMER_SERVICE_KNOWLEDGE}
 
 ${CUSTOMER_SERVICE_BEHAVIOR}
+
+${CUSTOMER_SERVICE_POLICY_BEHAVIOR}
 
 ${CUSTOMER_SERVICE_GUARDRAILS}
 `;

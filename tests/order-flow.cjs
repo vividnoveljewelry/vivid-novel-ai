@@ -1,0 +1,30 @@
+const { test } = require('node:test');
+const assert = require('node:assert/strict');
+const { createOrderState, transitionOrder } = require('../dist/customer-service/order-flow');
+const event = (target, source = 'human') => ({ target, source, evidenceId: 'verified-event-1' });
+test('cannot skip payment stages or accept conversational payment claims', () => {
+  const state = createOrderState();
+  assert.throws(() => transitionOrder(state, event('DEPOSIT_PAID', 'shopify')));
+  const pending = { ...state, stage: 'DEPOSIT_PENDING' };
+  assert.throws(() => transitionOrder(pending, event('DEPOSIT_PAID', 'human')));
+  assert.throws(() => transitionOrder(pending, { ...event('DEPOSIT_PAID', 'shopify'), evidenceId: '' }));
+  assert.equal(transitionOrder(pending, event('DEPOSIT_PAID', 'shopify')).stage, 'DEPOSIT_PAID');
+  assert.equal(pending.stage, 'DEPOSIT_PENDING');
+});
+test('two pre-approval refinements and one optional final adjustment are separate', () => {
+  let state = { ...createOrderState(), stage: 'DESIGN_REFINEMENT' };
+  for (let n = 0; n < 2; n++) state = transitionOrder(state, event('DESIGN_REFINEMENT'));
+  assert.throws(() => transitionOrder(state, event('DESIGN_REFINEMENT')));
+  state = transitionOrder(state, event('DESIGN_APPROVED'));
+  state = transitionOrder(state, event('IN_PRODUCTION', 'workshop'));
+  state = transitionOrder(state, event('FINAL_REVIEW', 'workshop'));
+  const withoutRevision = transitionOrder(state, event('READY_TO_SHIP', 'workshop'));
+  assert.equal(withoutRevision.finalAdjustments, 0);
+  state = transitionOrder(state, event('REVISION'));
+  assert.equal(state.finalAdjustments, 1);
+  state = transitionOrder(state, event('READY_TO_SHIP', 'workshop'));
+  assert.throws(() => transitionOrder(state, event('REVISION')));
+  state = transitionOrder(state, event('SHIPPED', 'courier'));
+  state = transitionOrder(state, event('DELIVERED', 'courier'));
+  assert.equal(transitionOrder(state, event('AFTERCARE')).stage, 'AFTERCARE');
+});
