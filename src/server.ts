@@ -1,5 +1,7 @@
 import express from "express";
-import { Pool } from "pg";
+import { pool, migrate } from './db';
+import { admin, authorized } from './admin/routes';
+import { receive } from './customer-service/collaboration';
 import { createClient } from "redis";
 import { generateCaption, CaptionRequest } from "./caption";
 import {
@@ -10,16 +12,10 @@ import {
 const app = express();
 
 app.use(express.json());
+app.use('/admin', admin);
 
 const port = Number(process.env.PORT || 8080);
 
-const pool = new Pool({
-  host: process.env.PGHOST,
-  port: Number(process.env.PGPORT || 5432),
-  user: process.env.PGUSER,
-  password: process.env.PGPASSWORD,
-  database: process.env.PGDATABASE || "postgres",
-});
 
 const redis = createClient({
   url: process.env.REDIS_URL,
@@ -161,6 +157,18 @@ app.post("/customer-service/test", async (req, res) => {
   }
 });
 
-app.listen(port, () => {
-  console.log(`Vivid Novel AI running on port ${port}`);
+// Until a verified channel adapter exists, durable ingress is staff-authenticated.
+// Customer supplied history, source, mode and confirmed flags are never accepted here.
+app.post('/customer-service/messages', async (req, res) => {
+ if (!req.headers.authorization || !authorized(req)) { res.status(401).json({status:'error',message:'Admin bearer authentication required for simulated ingress'}); return; }
+ try { res.json(await receive(req.body.conversationId,req.body.message,req.body.externalId,'authenticated ingress (simulated)')); }
+ catch(e) { res.status(400).json({status:'error',message:'Message could not be processed'}); }
 });
+
+async function start() {
+ if (process.env.PGHOST || process.env.DATABASE_URL) await migrate();
+ app.listen(port, () => {
+  console.log(`Vivid Novel AI running on port ${port}`);
+ });
+}
+start().catch(e=>{console.error('Startup/migration failed',e.message);process.exit(1);});

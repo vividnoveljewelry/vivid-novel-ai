@@ -1,0 +1,31 @@
+/* No secrets in localStorage; authentication uses an HttpOnly same-site cookie. */
+const $=id=>document.getElementById(id);
+let current=null,onlyNeeds=false,staff='Staff',active=null;
+const fields=['name','channel_handle','language','subject','jewelry_type','important_elements','references','gemstone_preference','budget','occasion','required_date','preferences','final_quote','payment_status','deposit_status','production_status','feasibility','designer_notes','timeline_status','suggested_price'];
+const stages=['NEW','EXPLORING','DESIGN_DIRECTION','QUALIFIED','DESIGNER_REVIEW','QUOTED','DEPOSIT_PENDING','DEPOSIT_PAID','DESIGN_REFINEMENT','DESIGN_APPROVED','IN_PRODUCTION','FINAL_REVIEW','REVISION','READY_TO_SHIP','SHIPPED','DELIVERED','AFTERCARE'];
+for(const [id,values] of [['factKey',fields],['stageTarget',stages]]) for(const v of values){const o=document.createElement('option');o.value=v;o.textContent=v.replaceAll('_',' ');$(id).append(o);}
+async function api(path,body){const r=await fetch('/admin'+path,{method:body===undefined?'GET':'POST',headers:{'Content-Type':'application/json','X-Staff-Name':staff},...(body===undefined?{}:{body:JSON.stringify(body)})});const data=await r.json();if(!r.ok)throw new Error(data.error||'Request failed');return data;}
+function notice(text){$('notice').textContent=text;}
+function el(tag,text,cls){const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;}
+async function busy(fn){const buttons=[...document.querySelectorAll('button')];buttons.forEach(b=>b.disabled=true);try{notice('Working…');await fn();notice('Saved. Outbound messages are stored or simulated; no external delivery.');}catch(e){notice(e.message);}finally{buttons.forEach(b=>b.disabled=false);}}
+async function inbox(){const data=await api('/api/conversations');$('login').classList.add('hidden');$('workspace').classList.remove('hidden');$('logout').classList.remove('hidden');$('count').textContent=data.conversations.filter(c=>c.needs_human).length;$('inbox').replaceChildren();for(const c of data.conversations.filter(c=>!onlyNeeds||c.needs_human)){const b=el('button',(c.demo?'[DEMO] ':'')+c.name);b.append(el('div',`${c.mode} · ${c.unread} unread${c.needs_human?' · Needs Human':''}`,'badge'+(c.needs_human?' warning':'')));b.onclick=()=>busy(()=>open(c.id));$('inbox').append(b);}}
+async function open(id){current=id;active=await api('/api/conversations/'+id);const s=active,c=s.conversation;$('clientTitle').textContent=(c.demo?'[DEMO] ':'')+c.name;$('controls').classList.remove('hidden');$('factControls').classList.remove('hidden');$('modeLabel').textContent=c.mode+(c.owner?' · '+c.owner:'');$('humanForm').classList.toggle('hidden',c.mode!=='HUMAN');$('briefing').textContent=`Customer intent: ${s.briefing.intent}\nDecision needed: ${s.briefing.decisionNeeded}\n${s.briefing.keyFacts.slice(0,8).join('\n')}`;
+ for(const key of ['thread','notes'])$(key).replaceChildren();for(const m of s.messages){if(m.role==='system')continue;const b=el('div',undefined,'bubble '+m.role);b.append(el('small',`${m.role.replaceAll('_',' ')} · ${m.delivery} · ${new Date(m.created_at).toLocaleString()}`),el('div',m.content));$(m.role==='human_internal'?'notes':'thread').append(b);}
+ $('facts').replaceChildren();const dl=el('dl',undefined,'facts');for(const key of fields){const f=s.facts.find(f=>f.key===key);dl.append(el('dt',key.replaceAll('_',' ')));const dd=el('dd',f?typeof f.value==='string'?f.value:JSON.stringify(f.value):'—');if(f){dd.append(el('div',`${f.source}${f.confirmed?' · confirmed':''}`,'muted'));dd.title=f.evidence;}dl.append(dd);}$('facts').append(dl);$('stageLabel').textContent=c.stage;
+ $('reviews').replaceChildren();for(const r of s.reviews.slice(0,5)){const box=el('div',undefined,'review');box.append(el('h3','Emily draft · '+r.status));const t=el('textarea');t.value=(r.edited||r.draft).join('\n\n');t.setAttribute('aria-label','Edit Emily draft');box.append(t);if(r.status==='pending'&&c.mode==='REVIEW'){const b=el('button','Approve edited reply (store only)','primary');b.onclick=()=>busy(async()=>{await api(`/api/conversations/${id}/reviews/${r.id}/approve`,{messages:t.value.split(/\n\s*\n/).filter(Boolean)});await refresh();});box.append(b);}else t.readOnly=true;$('reviews').append(box);}
+ $('audit').replaceChildren();for(const a of s.audit.slice(0,12))$('audit').append(el('p',`${a.event.replaceAll('_',' ')} · ${a.actor} · ${new Date(a.created_at).toLocaleString()}`,'muted'));await api('/api/conversations/'+id+'/read',{});
+}
+async function refresh(){await inbox();if(current)await open(current);}
+$('loginForm').onsubmit=e=>{e.preventDefault();busy(async()=>{staff=$('staff').value.trim();await api('/login',{token:$('token').value});$('token').value='';await inbox();});};
+$('logout').onclick=()=>busy(async()=>{await api('/logout',{});location.reload();});
+$('refresh').onclick=()=>busy(refresh);$('filter').onclick=()=>busy(async()=>{onlyNeeds=!onlyNeeds;await inbox();});
+$('createForm').onsubmit=e=>{e.preventDefault();busy(async()=>{const c=await api('/api/conversations',{name:$('newName').value,demo:$('demo').checked});await inbox();await open(c.id);});};
+document.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>busy(async()=>{await api(`/api/conversations/${current}/mode`,{mode:b.dataset.mode});await refresh();}));
+for(const [form,path,body,clear] of [
+ ['customerForm','customer',()=>({message:$('customerText').value,externalId:crypto.randomUUID()}),'customerText'],
+ ['humanForm','human-send',()=>({message:$('humanText').value}),'humanText'],
+ ['noteForm','notes',()=>({note:$('noteText').value,designerConfirmed:$('confirmed').checked,feasibility:$('feasibility').value,timeline_status:$('timeline').value,suggested_price:$('suggested').value}),'noteText'],
+ ['factForm','facts',()=>({key:$('factKey').value,value:$('factValue').value,evidence:$('factEvidence').value}),null],
+ ['stageForm','stage',()=>({stage:$('stageTarget').value,evidence:$('stageEvidence').value}),null]
+])$(form).onsubmit=e=>{e.preventDefault();busy(async()=>{await api(`/api/conversations/${current}/${path}`,body());if(clear)$(clear).value='';await refresh();});};
+inbox().catch(()=>notice('Sign in to view the private studio.'));
