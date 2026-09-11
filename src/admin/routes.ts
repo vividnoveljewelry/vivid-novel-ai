@@ -2,6 +2,7 @@ import { Router, Request } from 'express';
 import { timingSafeEqual } from 'node:crypto';
 import { pool } from '../db';
 import * as flow from '../customer-service/collaboration';
+import { runtimeStatus, setAutoRepliesEnabled } from '../customer-service/runtime-controls';
 import { dashboard } from './view';
 
 function equal(a:string,b:string) { const x=Buffer.from(a),y=Buffer.from(b); return x.length===y.length&&timingSafeEqual(x,y); }
@@ -45,6 +46,14 @@ const route=(fn:(req:any)=>Promise<unknown>)=>async(req:any,res:any)=>{
  try{res.json(await fn(req));}catch(e){const err=e as Error;res.status(e instanceof flow.WorkflowError?e.status:500).json({error:e instanceof flow.WorkflowError?err.message:'Operation failed; private input was retained if already saved. Please retry.'});console.error('Admin operation failed',err.message);}
 };
 const actor=(req:Request)=>flow.requiredText(req.headers['x-staff-name'] || 'Staff (shared admin token)',120);
+
+admin.get('/api/runtime',route(async()=>runtimeStatus()));
+admin.post('/api/runtime/auto-replies',route(async req=>{
+ if(typeof req.body.enabled!=='boolean') throw new flow.WorkflowError(400,'enabled must be true or false');
+ await setAutoRepliesEnabled(req.body.enabled,actor(req));
+ return runtimeStatus();
+}));
+
 admin.get('/api/conversations',route(async()=>({conversations:(await pool.query(`SELECT c.*,cl.name,cl.demo,co.stage FROM vn_conversations c JOIN vn_clients cl ON cl.id=c.client_id JOIN vn_commissions co ON co.conversation_id=c.id ORDER BY c.needs_human DESC,c.updated_at DESC LIMIT 200`)).rows})));
 admin.post('/api/conversations',route(req=>flow.createConversation(req.body.name,actor(req),req.body.demo===true)));
 admin.get('/api/conversations/:id',route(req=>flow.snapshot(req.params.id)));
