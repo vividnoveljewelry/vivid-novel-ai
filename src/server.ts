@@ -10,33 +10,11 @@ import {
   generateCustomerServiceReply,
 } from "./customer-service/agent";
 
+import { instagramCallback, startInstagramRefresh } from './instagram-oauth';
+
 const app = express();
 
-// Redirect-only placeholder: there is no OAuth initiation/state store yet.
-// Query values are untrusted and must never be logged, stored, or exchanged.
-// Before enabling account linking, require session-bound, expiring, single-use
-// state from an authenticated initiation route. Presence of state is not validation.
-app.get('/auth/instagram/callback', (req, res) => {
-  res.set({
-    'Cache-Control': 'no-store',
-    'Referrer-Policy': 'no-referrer',
-    'X-Content-Type-Options': 'nosniff',
-    'Content-Security-Policy': "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'",
-  });
-  const hasError = ['error', 'error_reason', 'error_description']
-    .some(key => Object.prototype.hasOwnProperty.call(req.query, key));
-  const hasCode = typeof req.query.code === 'string' && req.query.code.trim().length > 0;
-  const title = hasError ? 'Instagram authorization was not completed' : 'Instagram setup';
-  const message = hasError
-    ? 'Return to the Vivid Novel setup and try authorization again.'
-    : hasCode
-      ? 'Instagram authorization returned to Vivid Novel. You can return to the Vivid Novel setup.'
-      : 'The Instagram redirect URL is ready. You can return to the Vivid Novel setup.';
-  // Static HTML only; a code acknowledges the redirect, never authentication.
-  res.status(hasError ? 400 : 200).type('html').send(`<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${title}</title></head>
-<body><main><h1>${title}</h1><p>${message}</p><p>No Instagram account has been connected. Secure connection setup is still pending.</p></main></body></html>`);
-});
+app.get('/auth/instagram/callback', instagramCallback);
 
 // Verification only: never log query parameters or the configured secret.
 app.get('/webhooks/instagram', (req, res) => {
@@ -218,6 +196,7 @@ app.post('/customer-service/messages', async (req, res) => {
 
 async function start() {
  if (process.env.PGHOST || process.env.DATABASE_URL) await migrate();
+ startInstagramRefresh();
  app.listen(port, () => {
   console.log(`Vivid Novel AI running on port ${port}`);
  });

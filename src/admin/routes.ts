@@ -3,6 +3,7 @@ import { timingSafeEqual } from 'node:crypto';
 import { pool } from '../db';
 import * as flow from '../customer-service/collaboration';
 import { runtimeStatus, setAutoRepliesEnabled } from '../customer-service/runtime-controls';
+import { connectInstagram, instagramStatus } from '../instagram-oauth';
 import { dashboard } from './view';
 import { CUSTOMER_SERVICE_KNOWLEDGE } from '../customer-service/knowledge';
 
@@ -48,9 +49,13 @@ const route=(fn:(req:any)=>Promise<unknown>)=>async(req:any,res:any)=>{
 };
 const actor=(req:Request)=>flow.requiredText(req.headers['x-staff-name'] || 'Staff (shared admin token)',120);
 
+admin.post('/api/instagram/connect', connectInstagram);
+admin.get('/api/instagram', instagramStatus);
+
 admin.get('/api/runtime',route(async()=>runtimeStatus()));
 admin.get('/api/knowledge',route(async()=>({content:CUSTOMER_SERVICE_KNOWLEDGE})));
 admin.post('/api/runtime/auto-replies',route(async req=>{
+ if(req.body.enabled === true) throw new flow.WorkflowError(409,'Emily Auto-Replies are locked PAUSED during the Instagram OAuth pilot.');
  if(typeof req.body.enabled!=='boolean') throw new flow.WorkflowError(400,'enabled must be true or false');
  await setAutoRepliesEnabled(req.body.enabled,actor(req));
  return runtimeStatus();

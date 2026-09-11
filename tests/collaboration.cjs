@@ -11,13 +11,13 @@ test('durable collaboration: six required scenarios, stale drafts, privacy, idem
  const query=async(sql,args)=>{const r=await pg.query(sql,args);return {...r,rowCount:r.rows.length || r.affectedRows || 0};};
  // Execute multi-statement migration batches through exec; ordinary queries use Postgres parameters.
  pool.query=query;
- pool.connect=async()=>({query:async(sql,args)=>(!args && /CREATE TABLE (vn_clients|IF NOT EXISTS vn_runtime_controls)/.test(sql))?pg.exec(sql):query(sql,args),release(){}});
+ pool.connect=async()=>({query:async(sql,args)=>(!args && /CREATE TABLE (vn_clients|vn_instagram_oauth_states|IF NOT EXISTS vn_runtime_controls)/.test(sql))?pg.exec(sql):query(sql,args),release(){}});
  const original=agent.generateCustomerServiceReply;
  const contexts=[];
  agent.generateCustomerServiceReply=async input=>{contexts.push(input);return input.message.startsWith('Prepare')?["Our designer has reviewed the design. The two portraits can be the focus, with the house as a silhouette and the rose on the shoulder.","We recommend leaving the date off so those details have room to breathe."]:["We’ll keep the design without gemstones, as confirmed."];};
  try{
   await migrate();await migrate();
-  assert.equal((await query('SELECT * FROM vn_migrations')).rows.length,2);
+  assert.equal((await query('SELECT * FROM vn_migrations')).rows.length,3);
   const {id}=await flow.createConversation('Sophie / Milo · TEST','Tester',true);
   await t.test('1 complex feasibility creates CONSULT and Needs Human',async()=>{
    const r=await flow.receive(id,'Can both dogs, our house and a rose fit on this ring?', 'event-1','test');

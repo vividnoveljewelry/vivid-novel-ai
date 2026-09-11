@@ -50,5 +50,5 @@ The original `/customer-service/test` remains stateless for regression compatibi
 
 ## Remaining integrations
 
-`src/customer-service/integrations.ts` defines explicit boundaries only. Instagram OAuth, webhook signature validation, identity mapping, media ingestion, retries and delivered receipts are not implemented. Shopify order lookup/payment webhook verification, workshop/courier events and notifications are not implemented. No `sent` or `delivered` status exists for outgoing V1 messages. Token-authenticated manual simulation is not a production channel adapter. Feasibility detection is conservative keyword routing; expand multilingual intent coverage before opening real inbound channels.
+`src/customer-service/integrations.ts` defines explicit boundaries only. Instagram OAuth account connection is implemented as described in INSTAGRAM-OAUTH.md. Webhook signature validation, identity mapping, media ingestion, retries and delivered receipts remain unimplemented. Shopify order lookup/payment webhook verification, workshop/courier events and notifications are not implemented. No `sent` or `delivered` status exists for outgoing V1 messages. Token-authenticated manual simulation is not a production channel adapter. Feasibility detection is conservative keyword routing; expand multilingual intent coverage before opening real inbound channels.
 

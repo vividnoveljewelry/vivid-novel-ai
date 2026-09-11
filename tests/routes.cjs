@@ -19,10 +19,10 @@ test('health and invalid customer-service requests preserve endpoint contracts',
     const callback = 'http://127.0.0.1:18089/auth/instagram/callback';
     const marker = 'private-oauth-marker-<script>alert(1)</script>';
     for (const [query, status] of [
-      ['', 200],
-      [new URLSearchParams({ code: marker, state: marker }), 200],
-      [new URLSearchParams({ code: marker }), 200],
-      ['code=a&code=b&state=a&state=b', 200],
+      ['', 400],
+      [new URLSearchParams({ code: marker, state: marker }), 400],
+      [new URLSearchParams({ code: marker }), 400],
+      ['code=a&code=b&state=a&state=b', 400],
       ...['error', 'error_reason', 'error_description'].map(key =>
         [new URLSearchParams({ [key]: marker, code: marker, state: marker }), 400]),
       ['error=', 400],
@@ -35,7 +35,7 @@ test('health and invalid customer-service requests preserve endpoint contracts',
       assert.equal(response.headers.get('referrer-policy'), 'no-referrer');
       assert.match(response.headers.get('content-security-policy'), /default-src 'none'/);
       assert.equal(response.headers.get('set-cookie'), null);
-      assert.match(html, /No Instagram account has been connected/);
+      assert.match(html, /Invalid or expired authorization state/);
       assert.ok(!html.includes(marker));
       assert.ok(!html.includes('<script>'));
     }
