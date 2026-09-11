@@ -1,4 +1,5 @@
 import express from "express";
+import { createHash, timingSafeEqual } from 'node:crypto';
 import { pool, migrate } from './db';
 import { admin, authorized } from './admin/routes';
 import { receive } from './customer-service/collaboration';
@@ -10,6 +11,30 @@ import {
 } from "./customer-service/agent";
 
 const app = express();
+
+// Verification only: never log query parameters or the configured secret.
+app.get('/webhooks/instagram', (req, res) => {
+  const expected = process.env.META_INSTAGRAM_VERIFY_TOKEN;
+  const token = req.query['hub.verify_token'];
+  const challenge = req.query['hub.challenge'];
+  if (req.query['hub.mode'] !== 'subscribe' || !expected ||
+      typeof token !== 'string' || typeof challenge !== 'string') {
+    res.sendStatus(403);
+    return;
+  }
+  const digest = (value: string) => createHash('sha256').update(value).digest();
+  if (!timingSafeEqual(digest(token), digest(expected))) {
+    res.sendStatus(403);
+    return;
+  }
+  res.status(200).type('text/plain').send(challenge);
+});
+
+// Acknowledgement scaffold only. No ingestion, persistence, or outbound messages.
+// Register before JSON parsing so acknowledgement does not depend on payload parsing.
+app.post('/webhooks/instagram', (_req, res) => {
+  res.status(200).type('text/plain').send('EVENT_RECEIVED');
+});
 
 app.use(express.json());
 app.use('/admin', admin);
@@ -172,3 +197,4 @@ async function start() {
  });
 }
 start().catch(e=>{console.error('Startup/migration failed',e.message);process.exit(1);});
+
