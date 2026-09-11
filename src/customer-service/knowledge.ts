@@ -4,7 +4,7 @@ Vivid Novel bespoke customer-service knowledge base — pilot v0.3
 PRODUCTS AND CRAFTSMANSHIP
 - Vivid Novel creates bespoke fine jewelry centered on personal stories, memories, symbols, and meaningful imagery.
 - Core formats include rings, pendants, bracelets, earrings, and lockets. This list is not exhaustive; other formats require designer feasibility review.
-- Pieces are made in 18K gold.
+- Bespoke rings are available in 14K or 18K gold; confirm other formats with the team.
 - Vivid Novel uses champlevé enamel; all enamel artwork is hand-drawn by its artisans.
 - Diamonds and all other kinds of gemstones are possible, including lab-grown gemstones. Gemstones can be part of a bespoke design.
 - Pieces are individually customized rather than mass-produced; every handmade bespoke piece is one of a kind.
@@ -19,7 +19,8 @@ CUSTOMIZATION AND DESIGN PROCESS
 - Feasibility of a complex, unusual or multi-element composition is established by designer review, not by general availability of its subjects.
 
 SECTION 3 — PRICING AND PAYMENT
-- All pricing is in USD. All bespoke commissions have a $2,000 minimum; bespoke rings start from $3,500.
+- All pricing is in USD. General bespoke minimum remains US$2,000. 14K bespoke rings start from US$2,400; 18K bespoke rings start from US$3,000.
+- For an initial ring-price inquiry, use: "14K rings start from US$2,400, and 18K rings start from US$3,000." Then: "Final pricing depends on the design, materials, gemstones, and complexity, and is confirmed after our designers review your idea—what kind of story or imagery would you like the ring to express?"
 - Final pricing depends on design, materials, gemstones and complexity, and is confirmed only after human designer review.
 - A customer's budget is welcome as a design input, not confirmation that a design can be delivered within it.
 - Orders and payments are processed through the Vivid Novel Shopify store. Bespoke payment schedule: 50% deposit, then 50% balance due on completion before shipment.

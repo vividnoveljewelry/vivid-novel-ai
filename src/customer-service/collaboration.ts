@@ -6,7 +6,7 @@ import { transitionOrder, OrderStage } from './order-flow';
 
 export class WorkflowError extends Error { constructor(public status: number, message: string) { super(message); } }
 export const modes = ['EMILY','CONSULT','REVIEW','HUMAN'];
-export const factKeys = ['name','channel_handle','language','subject','jewelry_type','important_elements','references','gemstone_preference','budget','occasion','required_date','preferences','final_quote','payment_status','deposit_status','production_status','feasibility','designer_notes','timeline_status','suggested_price'];
+export const factKeys = ['name','channel_handle','email','phone','location','tags','preferred_contact','language','subject','jewelry_type','important_elements','references','gemstone_preference','budget','occasion','required_date','preferences','final_quote','payment_status','deposit_status','production_status','feasibility','designer_notes','timeline_status','suggested_price'];
 export function requiredText(v: unknown, max = 6000): string {
  if (typeof v !== 'string' || !v.trim() || v.length > max) throw new WorkflowError(400, 'A non-empty text value is required (max ' + max + ' characters)');
  return v.trim();
@@ -99,6 +99,14 @@ function publicHistory(s:Awaited<ReturnType<typeof snapshot>>) {
  // Approved messages have NOT been delivered; only simulated exchanges are included as simulated context.
  return s.messages.filter(m=>m.role==='customer'||(m.delivery==='sent_simulated'&&['emily','human_customer_facing'].includes(m.role))).slice(-60).map(m=>({role:(m.role==='customer'?'user':'assistant') as 'user'|'assistant',content:m.content}));
 }
+export const NEW_CLIENT_GREETING = 'Hello, thank you for your message!';
+function firstContact(messages:string[], s:{messages:Array<{role:string}>}) {
+ // Persisted outbound records, including approved drafts, survive history truncation and reloads.
+ const first=!s.messages.some(m=>['emily','human_customer_facing'].includes(m.role));
+ const body=messages.map(m=>m.replaceAll(NEW_CLIENT_GREETING,'').trim()).filter(Boolean);
+ const result=first?[NEW_CLIENT_GREETING,...body]:body;
+ return result.length>3?[...result.slice(0,2),result.slice(2).join(' ')]:result;
+}
 export function needsConsult(text:string) {
  return /feasib|fit|possible|can (you|we)|could (you|we)|designer|portrait|silhouette|two dogs|both dogs|complex|deadline|rush|refund|warranty|damage|chipped|quote|paid|payment|shipping|delivered|duties|customs|可|能|设计|付款|报价|交期|维修/i.test(text);
 }
@@ -129,7 +137,7 @@ export async function reply(id:string) {
  const s=await snapshot(id);
  if(s.conversation.mode!=='EMILY') return {status:'ok',messages:[],mode:s.conversation.mode,needsHuman:s.conversation.needs_human};
  const last=s.messages.filter(m=>m.role==='customer').slice(-1)[0];
- const messages=await generateCustomerServiceReply({message:last?.content || 'Continue naturally using the current confirmed client memory.',history:publicHistory(s).slice(0,-1),trustedContext:context(s)});
+ const messages=firstContact(await generateCustomerServiceReply({message:last?.content || 'Continue naturally using the current confirmed client memory.',history:publicHistory(s).slice(0,-1),trustedContext:context(s)}),s);
  return transaction(async db=>{
   const c=await lock(db,id);
   if(c.mode!=='EMILY'||c.version!==s.conversation.version) return {status:'ok',messages:[],mode:c.mode,stale:true};
@@ -160,7 +168,7 @@ export async function noteAndDraft(id:string,body:any,actor:string) {
  });
  // Note survives provider errors; retry can use a new note, without ever sending raw shorthand.
  const s=await snapshot(id);
- const draft=await generateCustomerServiceReply({message:'Prepare the customer-facing reply from the private team guidance in context.',history:publicHistory(s),trustedContext:context(s,note)});
+ const draft=firstContact(await generateCustomerServiceReply({message:'Prepare the customer-facing reply from the private team guidance in context.',history:publicHistory(s),trustedContext:context(s,note)}),s);
  return transaction(async db=>{
   const c=await lock(db,id),rid=randomUUID();
   if(c.version!==s.conversation.version) throw new WorkflowError(409,'Conversation changed while drafting. Draft again using latest context.');
@@ -177,11 +185,13 @@ export async function approve(id:string,rid:string,messages:unknown,actor:string
   if(!r) throw new WorkflowError(404,'Review not found');
   if(r.status==='approved') return {status:'ok',messages:[],duplicate:true,delivery:'approved'};
   if(c.mode!=='REVIEW'||r.status!=='pending'||r.context_version!==c.version) throw new WorkflowError(409,'Review is stale or conversation is not in REVIEW. Generate a fresh draft.');
-  for(const text of edited) await message(db,id,'emily',text,actor,'approved');
-  await db.query("UPDATE vn_reviews SET status='approved',edited=$2,approved_by=$3,approved_at=now() WHERE id=$1",[rid,JSON.stringify(edited),actor]);
+  const prior=await db.query('SELECT role FROM vn_messages WHERE conversation_id=$1',[id]);
+  const approved=firstContact(edited,{messages:prior.rows});
+  for(const text of approved) await message(db,id,'emily',text,actor,'approved');
+  await db.query("UPDATE vn_reviews SET status='approved',edited=$2,approved_by=$3,approved_at=now() WHERE id=$1",[rid,JSON.stringify(approved),actor]);
   await changed(db,id); await db.query('UPDATE vn_conversations SET needs_human=false WHERE id=$1',[id]);
-  await audit(db,id,'review_approved',actor,{reviewId:rid,messages:edited,delivery:'approved'});
-  return {status:'ok',messages:edited,delivery:'approved'};
+  await audit(db,id,'review_approved',actor,{reviewId:rid,messages:approved,delivery:'approved'});
+  return {status:'ok',messages:approved,delivery:'approved'};
  });
 }
 export async function humanSend(id:string,text:string,actor:string) {
@@ -200,6 +210,19 @@ export async function stage(id:string,target:OrderStage,evidence:string,actor:st
   catch(e) { throw new WorkflowError(409,(e as Error).message + '. System-only stages await verified integration events.'); }
   await db.query('UPDATE vn_commissions SET stage=$2,design_refinements=$3,final_adjustments=$4 WHERE conversation_id=$1',[id,next.stage,next.designRefinements,next.finalAdjustments]);
   await changed(db,id); await audit(db,id,'stage_changed',actor,{from:old.stage,to:target,evidence}); return next;
+ });
+}
+
+export async function addReference(id:string,body:any,actor:string) {
+ const name=requiredText(body.name,200);
+ const url=body.url ? requiredText(body.url,2000) : null;
+ if(url) { try { if(new URL(url).protocol!=='https:') throw new Error(); } catch { throw new WorkflowError(400,'Use a valid HTTPS reference link'); } }
+ return transaction(async db=>{
+  await lock(db,id);
+  const rid=randomUUID();
+  await db.query('INSERT INTO vn_references(id,conversation_id,name,url,source) VALUES($1,$2,$3,$4,$5)',[rid,id,name,url,'human']);
+  await changed(db,id);await audit(db,id,'reference_added',actor,{referenceId:rid,name});
+  return {id:rid};
  });
 }
 

@@ -4,6 +4,7 @@ import { pool } from '../db';
 import * as flow from '../customer-service/collaboration';
 import { runtimeStatus, setAutoRepliesEnabled } from '../customer-service/runtime-controls';
 import { dashboard } from './view';
+import { CUSTOMER_SERVICE_KNOWLEDGE } from '../customer-service/knowledge';
 
 function equal(a:string,b:string) { const x=Buffer.from(a),y=Buffer.from(b); return x.length===y.length&&timingSafeEqual(x,y); }
 export function authorized(req:Request) {
@@ -48,6 +49,7 @@ const route=(fn:(req:any)=>Promise<unknown>)=>async(req:any,res:any)=>{
 const actor=(req:Request)=>flow.requiredText(req.headers['x-staff-name'] || 'Staff (shared admin token)',120);
 
 admin.get('/api/runtime',route(async()=>runtimeStatus()));
+admin.get('/api/knowledge',route(async()=>({content:CUSTOMER_SERVICE_KNOWLEDGE})));
 admin.post('/api/runtime/auto-replies',route(async req=>{
  if(typeof req.body.enabled!=='boolean') throw new flow.WorkflowError(400,'enabled must be true or false');
  await setAutoRepliesEnabled(req.body.enabled,actor(req));
@@ -66,3 +68,4 @@ admin.post('/api/conversations/:id/notes',route(req=>flow.noteAndDraft(req.param
 admin.post('/api/conversations/:id/reviews/:rid/approve',route(req=>flow.approve(req.params.id,req.params.rid,req.body.messages,actor(req))));
 admin.post('/api/conversations/:id/human-send',route(req=>flow.humanSend(req.params.id,req.body.message,actor(req))));
 admin.post('/api/conversations/:id/stage',route(req=>flow.stage(req.params.id,req.body.stage,req.body.evidence,actor(req))));
+admin.post('/api/conversations/:id/references',route(req=>flow.addReference(req.params.id,req.body,actor(req))));

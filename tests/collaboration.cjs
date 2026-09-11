@@ -11,13 +11,13 @@ test('durable collaboration: six required scenarios, stale drafts, privacy, idem
  const query=async(sql,args)=>{const r=await pg.query(sql,args);return {...r,rowCount:r.rows.length || r.affectedRows || 0};};
  // Execute multi-statement migration batches through exec; ordinary queries use Postgres parameters.
  pool.query=query;
- pool.connect=async()=>({query:async(sql,args)=>sql.includes('CREATE TABLE vn_clients')?pg.exec(sql):query(sql,args),release(){}});
+ pool.connect=async()=>({query:async(sql,args)=>(!args && /CREATE TABLE (vn_clients|IF NOT EXISTS vn_runtime_controls)/.test(sql))?pg.exec(sql):query(sql,args),release(){}});
  const original=agent.generateCustomerServiceReply;
  const contexts=[];
  agent.generateCustomerServiceReply=async input=>{contexts.push(input);return input.message.startsWith('Prepare')?["Our designer has reviewed the design. The two portraits can be the focus, with the house as a silhouette and the rose on the shoulder.","We recommend leaving the date off so those details have room to breathe."]:["We’ll keep the design without gemstones, as confirmed."];};
  try{
   await migrate();await migrate();
-  assert.equal((await query('SELECT * FROM vn_migrations')).rows.length,1);
+  assert.equal((await query('SELECT * FROM vn_migrations')).rows.length,2);
   const {id}=await flow.createConversation('Sophie / Milo · TEST','Tester',true);
   await t.test('1 complex feasibility creates CONSULT and Needs Human',async()=>{
    const r=await flow.receive(id,'Can both dogs, our house and a rose fit on this ring?', 'event-1','test');
@@ -30,7 +30,7 @@ test('durable collaboration: six required scenarios, stale drafts, privacy, idem
    const s=await flow.snapshot(id);assert.equal(s.conversation.mode,'REVIEW');
    assert.equal(s.messages.filter(m=>m.role==='emily').length,0);
    assert.equal(s.messages.find(m=>m.role==='human_internal').delivery,'internal');
-   assert.equal(s.consultations[0].confirmed,true);assert.match(review.draft[0],/designer has reviewed/);
+   assert.equal(s.consultations[0].confirmed,true);assert.equal(review.draft[0],flow.NEW_CLIENT_GREETING);assert.match(review.draft[1],/designer has reviewed/);
   });
   await t.test('3 human edits and approves; outbound is approved, never delivered',async()=>{
    const edited=['The two portraits will be the focus, with a simple house silhouette and the rose on the shoulder.'];
@@ -71,6 +71,24 @@ test('durable collaboration: six required scenarios, stale drafts, privacy, idem
    const count=(await flow.snapshot(id)).messages.length;
    assert.equal((await flow.receive(id,'same event','event-1','test')).duplicate,true);
    assert.equal((await flow.snapshot(id)).messages.length,count);
+  });
+  await t.test('persisted greeting appears once; references and kill switch survive reload',async()=>{
+   agent.generateCustomerServiceReply=async()=>['14K rings start from US$2,400, and 18K rings start from US$3,000.','Final pricing depends on the design, materials, gemstones, and complexity, and is confirmed after our designers review your idea—what kind of story or imagery would you like the ring to express?'];
+   const {id:newId}=await flow.createConversation('Greeting regression','Tester',true);
+   const first=await flow.receive(newId,'How much is a ring?','greeting-first','Tester');
+   assert.equal(first.messages[0],flow.NEW_CLIENT_GREETING);assert.equal(first.messages.length,3);
+   assert.match(first.messages[1],/2,400.*3,000/);
+   const second=await flow.receive(newId,'I like flowers','greeting-second','Tester');
+   assert.ok(!second.messages.includes(flow.NEW_CLIENT_GREETING));
+   assert.equal((await flow.snapshot(newId)).messages.filter(m=>m.content===flow.NEW_CLIENT_GREETING).length,1);
+   await flow.addReference(newId,{name:'Sketch placeholder'},'Tester');
+   await flow.addReference(newId,{name:'Inspiration',url:'https://example.com/reference'},'Tester');
+   await assert.rejects(flow.addReference(newId,{name:'Unsafe',url:'javascript:alert(1)'},'Tester'),/HTTPS/);
+   assert.equal((await flow.snapshot(newId)).references.length,2);
+   const controls=require('../dist/customer-service/runtime-controls');
+   assert.equal(await controls.getAutoRepliesEnabled(),false);
+   await controls.setAutoRepliesEnabled(true,'Tester');assert.equal((await controls.runtimeStatus()).autoRepliesEnabled,true);
+   await controls.setAutoRepliesEnabled(false,'Tester');assert.equal(await controls.getAutoRepliesEnabled(),false);
   });
   await t.test('ownership change during generation suppresses pending Emily output',async()=>{
    await flow.setMode(id,'EMILY','Staff');
