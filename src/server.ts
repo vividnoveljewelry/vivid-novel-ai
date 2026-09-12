@@ -14,6 +14,15 @@ import { instagramCallback, startInstagramRefresh } from './instagram-oauth';
 
 const app = express();
 
+// Public portfolio assets are isolated from the application and private files.
+app.use('/portfolio', express.static('public/portfolio', { dotfiles: 'deny', maxAge: '1d' }));
+app.get('/', (_req, res) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Content-Security-Policy', "default-src 'none'; img-src 'self'; style-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'");
+  res.sendFile('public/index.html', { root: process.cwd() });
+});
+
 app.get('/auth/instagram/callback', instagramCallback);
 
 // Verification only: never log query parameters or the configured secret.
@@ -202,4 +211,5 @@ async function start() {
  });
 }
 start().catch(e=>{console.error('Startup/migration failed',e.message);process.exit(1);});
+
 
