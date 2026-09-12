@@ -79,7 +79,7 @@ export async function connectInstagram(_req: Request, res: Response) {
   res.cookie(COOKIE, browser, { secure: true, httpOnly: true, sameSite: 'lax', path: COOKIE_PATH, maxAge: TTL });
   const url = new URL('https://www.instagram.com/oauth/authorize');
   url.search = new URLSearchParams({ client_id: process.env.INSTAGRAM_APP_ID!, redirect_uri: REDIRECT_URI,
-   response_type: 'code', scope: SCOPES.join(','), state, force_reauth: 'true' }).toString();
+   response_type: 'code', scope: SCOPES.join(','), state }).toString();
   res.json({ authorizationUrl: url.toString() });
  } catch { res.status(503).json({ error: 'Instagram connection setup is unavailable. Please retry.' }); }
 }
