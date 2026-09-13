@@ -11,6 +11,11 @@
   <meta property="og:type" content="website">
   <meta property="og:image" content="https://vivid-novel-ai-production.up.railway.app/portfolio/dog.jpg">
   <link rel="stylesheet" href="/portfolio/style.css?v=2">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=La+Belle+Aurore&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/portfolio/storybook.css?v=3">
+  <script src="/portfolio/storybook.js?v=1" defer></script>
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -23,17 +28,52 @@
   <section class="hero wrap" aria-labelledby="hero-title">
     <div class="hero-copy">
       <p class="eyebrow">A story in every piece</p>
-      <h1 id="hero-title">Your story,<br>made<br><em>precious.</em></h1>
+      <h1 id="hero-title">Your <br>story,<br>made <br>precious.</h1>
       <span class="short-rule" aria-hidden="true"></span>
       <p class="hero-description">Bespoke jewelry for life’s<br>most meaningful moments.</p>
       <a class="text-link" href="https://www.instagram.com/vivid.novel/" target="_blank" rel="noopener noreferrer">Begin your story on Instagram <span aria-hidden="true">↗</span></a>
       <p class="handwritten hero-note">People. Pets. Places.<br>Moments that matter.</p>
     </div>
-    <div class="memory-board">
-      <figure class="photo main-photo"><img src="/portfolio/dog.jpg" alt="Vivid Novel white-dog portrait ring with a crescent of gemstones, photographed on soft fabric" width="1000" height="1100" fetchpriority="high"><figcaption>A little love, kept close.</figcaption></figure>
-      <div class="letter"><span class="eyebrow">A note to remember</span><p class="handwritten">Keep a<br>little love<br>close.</p><span class="heart" aria-hidden="true">♡</span></div>
-      <figure class="photo small-photo"><img src="/portfolio/baby.jpg" alt="Gold signet ring featuring a baby portrait surrounded by beloved toys" width="900" height="950"><figcaption>For the moments that stay.</figcaption></figure>
-      <p class="board-caption">More than jewelry.<br>A piece of your story.</p>
+    <div class="memory-board" role="region" aria-roledescription="carousel" aria-label="People, pets and places, made precious">
+      <div class="paper-back" aria-hidden="true"></div>
+      <div class="story-slide is-active" data-story="dog" role="group" aria-roledescription="slide" aria-label="1 of 3: A love to keep close">
+        <figure class="photo main-photo"><img src="/portfolio/mood-dog.jpg" alt="Atmospheric portrait of a white dog looking into the light" width="800" height="1000" fetchpriority="high"><figcaption>A love to keep close.</figcaption></figure>
+        <div class="letter"><p class="handwritten">Good friends<br>stay in<br>our hearts.</p><span class="heart" aria-hidden="true">♡</span></div>
+        <div class="floating-jewel">
+          <svg viewBox="255 425 490 410" role="img" aria-label="Actual Vivid Novel white-dog portrait ring with a crescent of gemstones">
+            <defs><clipPath id="dog-cut"><path d="M279 686 C264 670 267 624 275 600 C286 568 326 550 354 527 C376 508 405 480 436 464 C479 440 528 433 566 440 C629 447 678 492 704 548 C731 606 737 669 719 722 C699 778 647 814 585 820 C530 825 476 807 431 786 C392 766 344 737 314 718 C295 707 282 700 279 686Z"/></clipPath></defs>
+            <image href="/portfolio/dog.jpg" width="1000" height="1100" clip-path="url(#dog-cut)"/>
+          </svg>
+        </div>
+      </div>
+      <div class="story-slide" data-story="cat" role="group" aria-roledescription="slide" aria-label="2 of 3: A familiar little soul" aria-hidden="true">
+        <figure class="photo main-photo"><img src="/portfolio/mood-cat.jpg" alt="Atmospheric portrait of a white cat beside a sunlit window" width="800" height="1000"><figcaption>A familiar little soul.</figcaption></figure>
+        <div class="letter"><p class="handwritten">All the<br>little things.<br>All the love.</p><span class="heart" aria-hidden="true">♡</span></div>
+        <div class="floating-jewel cat-jewel">
+          <svg viewBox="198 303 510 403" role="img" aria-label="Actual Vivid Novel white-cat signet with pink enamel flowers">
+            <defs><clipPath id="cat-cut"><path d="M212 586 C204 562 219 539 252 523 L306 475 C334 445 355 404 387 373 C431 327 479 311 516 315 C572 314 617 345 650 393 C685 442 706 504 700 558 C696 624 658 674 603 690 C560 703 502 692 463 676 L359 637 L261 612 C230 605 215 602 212 586Z"/></clipPath></defs>
+            <image href="/portfolio/cat.jpg" width="900" height="1000" clip-path="url(#cat-cut)"/>
+          </svg>
+        </div>
+      </div>
+      <div class="story-slide" data-story="coast" role="group" aria-roledescription="slide" aria-label="3 of 3: Somewhere you carry with you" aria-hidden="true">
+        <figure class="photo main-photo"><img src="/portfolio/mood-coast.jpg" alt="Atmospheric tropical shoreline with palms and a softly setting sun" width="800" height="1000"><figcaption>Somewhere you carry with you.</figcaption></figure>
+        <div class="letter"><p class="handwritten">Some places<br>never<br>leave us.</p><span class="heart" aria-hidden="true">♡</span></div>
+        <div class="floating-jewel coast-jewel">
+          <svg viewBox="198 362 322 315" role="img" aria-label="Actual Vivid Novel beach landscape ring with palms, sunset and stars">
+            <defs><clipPath id="coast-cut"><path d="M352 371 C401 371 440 402 463 444 C483 475 513 502 510 543 C507 563 490 576 477 590 C451 638 409 663 367 668 C320 675 278 651 254 613 C237 582 216 568 210 548 C197 514 211 484 232 464 C248 447 254 419 278 399 C301 380 326 371 352 371Z"/></clipPath></defs>
+            <image href="/portfolio/beach.jpg" width="700" height="900" clip-path="url(#coast-cut)"/>
+          </svg>
+        </div>
+      </div>
+      <img class="blossom" src="/portfolio/blossom.png" width="1000" height="667" alt="" aria-hidden="true">
+      <p class="board-caption">More than jewelry.<br>A keepsake<br>for always.</p>
+      <div class="slideshow-controls" aria-label="Slideshow controls" hidden>
+        <button class="story-dot" type="button" aria-label="Show dog story" aria-pressed="true" data-slide="0"></button>
+        <button class="story-dot" type="button" aria-label="Show cat story" aria-pressed="false" data-slide="1"></button>
+        <button class="story-dot" type="button" aria-label="Show landscape story" aria-pressed="false" data-slide="2"></button>
+        <button class="slideshow-toggle" type="button" aria-label="Pause slideshow">Pause</button>
+      </div>
     </div>
   </section>
 
@@ -41,6 +81,7 @@
     <div class="section-label wrap"><span>From our storybook</span><span>Individually imagined. Individually made.</span></div>
     <div class="filmstrip">
       <figure><img src="/portfolio/cat.jpg" alt="White-cat portrait signet with pink enamel flowers" width="900" height="1000" loading="lazy"><figcaption>A familiar face</figcaption></figure>
+      <figure class="ambience-frame"><img src="/portfolio/mood-dog.jpg" alt="A quiet moment with a white dog — mood photograph" width="800" height="1000" loading="lazy"><figcaption>The love behind the story</figcaption></figure>
       <figure><img src="/portfolio/beach.jpg" alt="Enamel beach landscape ring with palm trees, a setting sun and stars" width="700" height="900" loading="lazy"><figcaption>A place to return to</figcaption></figure>
       <figure><img src="/portfolio/baby.jpg" alt="Baby portrait and childhood toys captured in a gold ring" width="900" height="950" loading="lazy"><figcaption>A moment in time</figcaption></figure>
       <figure><img src="/portfolio/pendant.jpg?v=2" alt="Personalized cat portrait pendant with a red scarf and the name Sylvia" width="900" height="1100" loading="lazy"><figcaption>A love like no other</figcaption></figure>
@@ -49,6 +90,8 @@
   </section>
 
   <section id="story" class="intro wrap">
+    <figure class="memory-scrap coast-scrap"><img src="/portfolio/mood-coast.jpg" width="800" height="1000" alt="A palm-fringed shoreline in warm evening light" loading="lazy"><figcaption>Same place.<br>Different forever.</figcaption></figure>
+    <figure class="memory-scrap flower-scrap"><div class="botanical-photo"><img src="/portfolio/blossom.png" width="1000" height="667" alt="Ivory blossoms on a delicate branch" loading="lazy"></div><figcaption>For the moments<br>that stay.</figcaption></figure>
     <span class="little-star" aria-hidden="true">✧</span>
     <p class="eyebrow">The things we carry</p>
     <h2>Turn your memories<br>into <em>modern heirlooms.</em></h2>
