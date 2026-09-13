@@ -19,4 +19,17 @@ h1,h2,h3{font-weight:300}h1{font-size:clamp(69px,6.6vw,97px);line-height:.88;let
 .board-caption{bottom:5px}.slideshow-controls{left:8%;bottom:5px}
 @media(max-width:720px){.board-caption{bottom:6px}.slideshow-controls{left:6%;bottom:4px}}
 @media(max-width:720px){.hero-note{position:static;max-width:none;margin:22px 0 0 12px;font-size:25px;transform:rotate(-5deg)}}
+/* Supplied paper artwork with transparent cutouts. */
+.paper-back{background: url('/portfolio/rustic-paper.png') center / 114% 108% no-repeat;box-shadow:none;clip-path:polygon(3% 1%,14% 2%,26% 1%,38% 2%,51% 1%,67% 2%,81% 0,97% 2%,99% 12%,98% 25%,100% 39%,98% 53%,100% 68%,98% 82%,97% 97%,83% 99%,68% 98%,53% 100%,38% 98%,24% 100%,9% 98%,2% 94%,1% 80%,2% 65%,0 50%,2% 36%,0 21%)}
+.letter{background:none;box-shadow:none;clip-path:none;isolation:isolate;padding-top:64px}
+.letter:before{content:'';position:absolute;inset:-12% -12% -8%;z-index:-1;background:url('/portfolio/pinned-note.png') center 52% / 100% 205% no-repeat;mix-blend-mode:multiply;transform:rotate(-10deg)}
+.letter p{font-size:28px;line-height:1.2}.letter .heart{margin-top:5px}
+.memory-scrap{filter:none}.mountain-art{height:228px;background:url('/portfolio/mountain-collage.png') center 49% / 120% auto no-repeat;mix-blend-mode:multiply}.coast-scrap{width:200px;left:0;transform:rotate(-5deg)}.coast-scrap figcaption{margin-top:10px}
+.flower-scrap{width:190px;transform:rotate(5deg)}.flower-scrap:before{display:none}.memory-scrap>.summer-art{height:auto;width:100%;clip-path:none;mix-blend-mode:multiply}
+@media(max-width:1100px){.coast-scrap{width:160px}.flower-scrap{width:155px}.letter{padding-top:55px}.letter p{font-size:23px}}
+@media(max-width:850px) and (min-width:721px){.coast-scrap{width:135px}.flower-scrap{width:132px}.mountain-art{height:190px}.letter p{font-size:20px}}
+@media(max-width:720px){.coast-scrap{width:135px;left:9px}.flower-scrap{width:132px;right:12px;bottom:48px}.mountain-art{height:142px}.letter{padding:48px 8px 12px}.letter p{font-size:19px}.letter .heart{font-size:25px}.coast-scrap figcaption{font-size:21px;margin-left:20px}}
+@media(max-width:380px){.letter p{font-size:17px}.coast-scrap{width:123px}.flower-scrap{width:120px}}
+.letter:before{background-color:var(--paper);background-blend-mode:multiply;clip-path:polygon(1% 29%,10% 28%,15% 18%,35% 21%,68% 1%,76% 23%,94% 32%,99% 39%,93% 77%,99% 84%,85% 91%,80% 99%,42% 93%,26% 100%,20% 85%,3% 79%,7% 48%)}
+.mountain-art{background-image:url('/portfolio/mountain-transparent.png');mix-blend-mode:normal}.memory-scrap>.summer-art{mix-blend-mode:normal}
 
